@@ -1,0 +1,15 @@
+# Virtual Environment
+.venv/
+Include/
+Lib/
+Scripts/
+pyvenv.cfg
+
+# Python Artifacts & Cache
+__pycache__/
+*.pyc
+
+# Database/Generated Files (Optional but Recommended)
+*.db
+citesys/*_pb2.py
+citesys/*_pb2_grpc.py
