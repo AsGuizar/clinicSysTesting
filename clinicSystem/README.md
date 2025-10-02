@@ -1,60 +1,87 @@
 🏥 Clinic System - gRPC Service
-This repository contains the core files for the Clinic System, implemented using gRPC (Google Remote Procedure Call). The system includes a Python-based server and client that communicate using protocol buffers defined in clinic.proto.
+This repository contains the core files for the Clinic System, implemented using gRPC (Google Remote Procedure Call) and backed by a local SQLite database (clinic.db).
 
-📂 Project Structure
-The core application logic and service definitions are located inside the citesys/ directory.
+The key to running this project is understanding the difference between the Server (the central data host) and the Client (the user interface).
+
+📁 Project Structure (CRITICAL)
+Ensure your files are arranged exactly like this. The citesys folder MUST be a direct child of the root project folder.
 
 /clinicSystem
-├── .venv/                      # Python virtual environment (ignored by Git)
-├── citesys/
+├── .venv/                      # Python virtual environment
+├── citesys/                    # Python source package
 │   ├── client.py               # gRPC client application
-│   ├── clinic.proto            # Protocol buffer definition file (Service definition)
-│   └── server.py               # gRPC server implementation
-├── .gitignore                  # Specifies files/folders to ignore (e.g., .venv)
+│   ├── clinic.proto            # Protocol buffer definition file
+│   ├── server.py               # gRPC server implementation
+│   ├── clinic_pb2.py           # (GENERATED STUB)
+│   └── clinic_pb2_grpc.py      # (GENERATED STUB)
+├── .gitignore                  # Specifies files/folders to ignore
 └── requirements.txt            # List of required Python dependencies
 
-🚀 Setup & Installation (Start Here!)
-Follow these steps to set up the project environment on your local machine.
+🚀 Setup & Installation (Mandatory First Steps)
+Both the Server Host and the Client User must follow these three steps from the root directory of the project (/clinicSystem).
 
-1. Clone the Repository
-git clone [https://github.com/AsGuizar/clinicSystem.git](https://github.com/AsGuizar/clinicSystem.git)
-cd clinicSystem
-
-2. Create and Activate the Virtual Environment
-It is crucial to work inside an isolated virtual environment (.venv).
+1. Create and Activate the Virtual Environment
+You MUST activate the virtual environment (.venv) for every step.
 
 # Create the environment
 python -m venv .venv
 
-# Activate the environment (choose based on your OS/Shell):
-# Windows (PowerShell/CMD):
-.venv\Scripts\activate
-# macOS/Linux (Git Bash):
-source .venv/bin/activate
+# Activate the environment (Use the command appropriate for MINGW64/Git Bash):
+source .venv/Scripts/activate
 
-(Your terminal prompt should now show (.venv) to indicate activation.)
+(Your terminal prompt must show (.venv).)
 
-3. Install Dependencies
-Install the required Python packages (including grpcio and protobuf) using the requirements.txt file.
+2. Install Dependencies
+Install the required Python packages (grpcio, protobuf, etc.):
 
-pip install -r requirements.txt
+(venv) pip install -r requirements.txt
 
-4. Generate gRPC Code
-The Protocol Buffer definition (clinic.proto) must be compiled to generate the Python stub files (clinic_pb2.py and clinic_pb2_grpc.py).
+3. Generate gRPC Code Stubs (Protobuf Compilation)
+This step generates the Python files needed for the client and server to talk. This command MUST be run from the ROOT directory.
 
-Note: If you run this from the project root while the .venv is active, it should work immediately.
+(venv) python -m grpc_tools.protoc -I citesys --python_out=citesys --pyi_out=citesys --grpc_python_out=citesys citesys/clinic.proto
 
-python -m grpc_tools.protoc -I. --python_out=citesys --pyi_out=citesys --grpc_python_out=citesys citesys/clinic.proto
+(If successful, this command will run silently and create clinic_pb2.py and clinic_pb2_grpc.py inside citesys/.)
 
-▶️ Running the Application
-1. Start the Server
-Open a terminal, ensure the .venv is activated, and run the server.
+🎯 Role-Based Instructions
+A. The Server Host (Your Machine)
+The Server Host is the machine that runs the server process, listens for requests, and manages the central clinic.db file.
+
+1. Configure the Firewall
+You must create an inbound rule in your operating system's firewall (e.g., Windows Defender Firewall) to allow TCP traffic on port 50051. This allows other computers on the network to reach your server.
+
+2. Start the Server
+Run the server executable from the ROOT directory:
 
 (venv) python citesys/server.py
 
-Expected Output: Server will start and wait for client connections.
+The server is bound to 0.0.0.0:50051, meaning it listens on all available network interfaces, ensuring it runs even if your IP changes.
+
+3. Share Your IP
+While the server listens to 0.0.0.0, the client needs your machine's current local IP address (e.g., 192.168.1.55).
+
+Find your current IP address (e.g., using ipconfig on Windows or ip a on Linux/Mac).
+
+Share this IP address with the Client User.
+
+B. The Client User (Collaborator's Machine)
+The Client User runs the client application to send requests to the Server Host.
+
+1. Update the Client IP
+Before running, the client's connection string must be updated to the Server Host's current local IP address.
+
+In citesys/client.py, change the IP address in the __init__ method:
+
+# Inside citesys/client.py
+class ClinicClient:
+    def __init__(self):
+        # REPLACE 'SERVER_HOST_IP' with the actual IP address provided by the Server Host
+        self.channel = grpc.insecure_channel('SERVER_HOST_IP:50051') 
+        self.stub = clinic_pb2_grpc.ClinicServiceStub(self.channel)
 
 2. Run the Client
-Open a separate terminal, ensure the .venv is activated, and run the client.
+Run the client executable from the ROOT directory:
 
 (venv) python citesys/client.py
+
+If successful, the client will connect to the server, send RPC calls, and display the results.
